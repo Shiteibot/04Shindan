@@ -10,6 +10,9 @@
     select, input { width: 200px; }
     table { border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #999; padding: 4px 8px; }
+    .edit-active {
+      background-color: pink;
+    }
   </style>
 </head>
 <body>
@@ -115,37 +118,57 @@
       </select>
     </label>
 
-    <button onclick="addData()">追加</button>
+    <button id="addButton" onclick="addData()">追加</button>
   </div>
 
   <h2>入力データ一覧</h2>
   <table id="dataTable">
-    <tr><th>番号</th><th>名前</th><th>性別</th><th>肌</th><th>目</th><th>髪</th><th>カラー</th><th>立ち位置</th></tr>
+    <tr><th>番号</th><th>名前</th><th>性別</th><th>肌</th><th>目</th><th>髪</th><th>カラー</th><th>立ち位置</th><th>操作</th></tr>
   </table>
 
-  <script>
-    let dataList = [];
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  let dataList = [];
+  let editIndex = null;
 
-    function addData() {
-      const name = document.getElementById('nameInput').value;
-      const gender = document.getElementById('gender').value;
-      const skin = document.getElementById('skinColor').value;
-      const eye = document.getElementById('eyeColor').value;
-      const hair = document.getElementById('hairColor').value;
-      const image = document.getElementById('imageColor').value;
-      const birth = document.getElementById('birthOrder').value;
+  function addData() {
+    const name = document.getElementById('nameInput').value;
+    const gender = document.getElementById('gender').value;
+    const skin = document.getElementById('skinColor').value;
+    const eye = document.getElementById('eyeColor').value;
+    const hair = document.getElementById('hairColor').value;
+    const image = document.getElementById('imageColor').value;
+    const birth = document.getElementById('birthOrder').value;
 
-      const entry = { name, gender, skin, eye, hair, image, birth };
+    const entry = { name, gender, skin, eye, hair, image, birth };
+
+    if (editIndex !== null) {
+      dataList[editIndex] = entry;
+      editIndex = null;
+    } else {
       dataList.push(entry);
-      renderTable();
     }
 
-    function renderTable() {
-      const table = document.getElementById('dataTable');
-      table.innerHTML = '<tr><th>番号</th><th>名前</th><th>性別</th><th>肌</th><th>目</th><th>髪</th><th>カラー</th><th>立ち位置</th></tr>';
+    document.getElementById("addButton").textContent = "追加";
+    renderTable();
+    clearInputs();
+  }
 
-      dataList.forEach((d, i) => {
-        const row = `<tr>
+  function clearInputs() {
+    document.getElementById('nameInput').value = '';
+  }
+
+  function renderTable() {
+    const table = document.getElementById('dataTable');
+    table.innerHTML =
+      '<tr><th>番号</th><th>名前</th><th>性別</th><th>肌</th><th>目</th><th>髪</th><th>カラー</th><th>立ち位置</th><th>操作</th></tr>';
+
+    dataList.forEach((d, i) => {
+      const isEditing = editIndex === i;
+      const editClass = isEditing ? 'edit-active' : '';
+
+      const row = `
+        <tr>
           <td>${i + 1}</td>
           <td>${d.name}</td>
           <td>${d.gender}</td>
@@ -154,22 +177,68 @@
           <td>${d.hair}</td>
           <td>${d.image}</td>
           <td>${d.birth}</td>
+          <td>
+            <button class="${editClass}" onclick="editData(${i})">編集</button>
+            <button onclick="confirmDelete(${i})">削除</button>
+          </td>
         </tr>`;
-        table.innerHTML += row;
-      });
-    }
-  </script>
-  <button onclick="analyze()">分析する</button>
-  <canvas id="resultChart" width="400" height="300"></canvas>
+      table.innerHTML += row;
+    });
+  }
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-function analyze(){
-  const counts={};
-  dataList.forEach(d=>{counts[d.gender]=(counts[d.gender]||0)+1;});
-  const ctx=document.getElementById('resultChart');
-  new Chart(ctx,{type:'bar',data:{labels:Object.keys(counts),datasets:[{label:'人数',data:Object.values(counts)}]}});
-}
+  function editData(i) {
+    // 編集モード切り替え
+    if (editIndex === i) {
+      // すでに編集中の同じ行を押した → 解除
+      editIndex = null;
+      document.getElementById("addButton").textContent = "追加";
+      renderTable();
+      clearInputs();
+      return;
+    }
+
+    // 新しい編集対象
+    const d = dataList[i];
+    document.getElementById('nameInput').value = d.name;
+    document.getElementById('gender').value = d.gender;
+    document.getElementById('skinColor').value = d.skin;
+    document.getElementById('eyeColor').value = d.eye;
+    document.getElementById('hairColor').value = d.hair;
+    document.getElementById('imageColor').value = d.image;
+    document.getElementById('birthOrder').value = d.birth;
+
+    editIndex = i;
+    document.getElementById("addButton").textContent = "変更";
+    renderTable();
+  }
+
+  function confirmDelete(i) {
+    const name = dataList[i].name;
+    const result = confirm(`${name} のデータを削除しますか？`);
+    if (result) {
+      dataList.splice(i, 1);
+      renderTable();
+    }
+  }
+
+  function analyze() {
+    const counts = {};
+    dataList.forEach(d => {
+      counts[d.gender] = (counts[d.gender] || 0) + 1;
+    });
+
+    const ctx = document.getElementById('resultChart');
+    new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: Object.keys(counts),
+        datasets: [{ data: Object.values(counts) }]
+      }
+    });
+  }
 </script>
+
+<button onclick="analyze()">分析する</button>
+<canvas id="resultChart" width="400" height="300"></canvas>
 </body>
 </html>
