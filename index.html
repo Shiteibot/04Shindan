@@ -21,8 +21,9 @@
 
     <label>性別：
       <select id="gender">
-        <option>男</option>
-        <option>女</option>
+        <option>男性</option>
+        <option>女性</option>
+        <option>両方</option>
         <option>その他</option>
       </select>
     </label>
@@ -82,6 +83,7 @@
         <option>黒色</option>
         <option>灰色</option>
         <option>虹色</option>
+        <option>髪がない</option>
       </select>
     </label>
 
@@ -157,5 +159,17 @@
       });
     }
   </script>
+  <button onclick="analyze()">分析する</button>
+  <canvas id="resultChart" width="400" height="300"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function analyze(){
+  const counts={};
+  dataList.forEach(d=>{counts[d.gender]=(counts[d.gender]||0)+1;});
+  const ctx=document.getElementById('resultChart');
+  new Chart(ctx,{type:'bar',data:{labels:Object.keys(counts),datasets:[{label:'人数',data:Object.values(counts)}]}});
+}
+</script>
 </body>
 </html>
